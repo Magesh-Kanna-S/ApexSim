@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 32 32" style="enable-background:new 0 0 32 32;" xml:space="preserve">
+<defs>
+  <linearGradient id="apexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#06b6d4"/>
+    <stop offset="100%" stop-color="#10b981"/>
+  </linearGradient>
+</defs>
+<rect width="32" height="32" rx="7" fill="url(#apexGrad)"/>
+<path d="M16 6 L24 24 L20.5 24 L19 20 L13 20 L11.5 24 L8 24 Z M14.2 17 L17.8 17 L16 12.5 Z" fill="#fff"/>
+</svg>

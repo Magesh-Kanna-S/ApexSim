@@ -1,0 +1,80 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Compute base path
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          if [[ "$REPO_NAME" == *.github.io ]]; then
+            # User/org site → served from the root, no base path needed
+            echo "NEXT_PUBLIC_BASE_PATH=" >> "$GITHUB_ENV"
+          else
+            # Project site → served from /repo-name
+            echo "NEXT_PUBLIC_BASE_PATH=/$REPO_NAME" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Ensure GitHub Pages is enabled (GitHub Actions build type)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Enabling GitHub Pages with 'GitHub Actions' as build source..."
+          # 1) Create the Pages site if it doesn't exist yet (201 = created)
+          if gh api --method POST "repos/${{ github.repository }}/pages" \
+               -f build_type=workflow --silent 2>/dev/null; then
+            echo "GitHub Pages enabled (new site created)."
+          else
+            # 2) Site already exists — switch its build source to 'workflow' (GitHub Actions)
+            if gh api --method PUT "repos/${{ github.repository }}/pages" \
+                 -f build_type=workflow --silent 2>/dev/null; then
+              echo "Existing GitHub Pages site switched to 'GitHub Actions' build source."
+            else
+              echo "Could not auto-configure Pages (may need admin scope). Continuing anyway..."
+            fi
+          fi
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
